@@ -1,97 +1,113 @@
 @font-face {
-    font-family: "Open Sans";
+font-family: "Montserrat";
+src: url("../fonts/Montserrat-VariableFont_wght.woff2")
+}
+
+@media only screen and (max-width: 768px){
+body{
+    margin: 0;
+    background: #FAF7F6;
+    font-family: 'Montserrat';
+
+}
+h1{
+    text-align: center;
+    font-weight: 600;
+    margin-left: 10%;
+    margin-right: 10%;
+}
+h3{
+    text-align: center;
     font-weight: 400;
-    /*-- src: url("https://fonts.gstatic.com/s/opensans/v13/cJZKeOuBrn4kERxqtaUH3T8E0i7KZn-EPnyo3HZu7kw.woff"); */
-    src: url("../font/opensans.woff")
-  }
-  @font-face {
-    font-family: "Roboto Mono", monospace;
+    margin-left: 10%;
+    margin-right: 10%;
+}
+p{
+    text-align: left;
+    font-weight: 300;
+    margin-left: 10%;
+    margin-right: 10%;
+}
+img{
+    height: auto;
+    width: 100vw;
+    margin: auto;
+    display: block;
+}
+sup {
+    line-height: 0;
+}
+figcaption {
+    padding: 10px;
+    text-align: center;
     font-weight: 400;
-    src: url("../font/RobotoMono-VariableFont_wght.ttf")
-  }
-  @media only screen and (max-width: 768px){
-    body{
-        margin: 0;
-        background: #FAF7F6;
-    }
-    h1{
-        text-align: center;
-        font-family: 'Open Sans';
-        font-weight: bolder;
-        margin-left: 10%;
-        margin-right: 10%;
-    }
-    h3{
-        text-align: center;
-        font-family: 'Open Sans';
-        font-weight: 400;
-        margin-left: 10%;
-        margin-right: 10%;
-    }
-    p{
-        text-align: left;
-        font-family: 'Open Sans';
-        font-weight: 400;
-        margin-left: 10%;
-        margin-right: 10%;
-    }
-    img{
-        height: auto;
-        width: 100vw;
-        margin: auto;
-        display: block;
-    }
-    sup {
-        line-height: 0;
+    margin-left: 10%;
+    margin-right: 10%;
+}
+figure {
+    margin:0;
+    padding:0;
+}
+hr{
+    margin-left: 10%;
+    margin-right: 10%;
+}
     
-        /* The following rules (or similar) likely come from browser 
-         * style and are not needed
-         */
-        font-size: 0.83em;
-        vertical-align: super;
-    }
-  }
-  @media only screen and (min-width: 768px){
-    body{
-        margin: 0;
-        background: #FAF7F6;
-    }
-    h1{
-        text-align: center;
-        font-family: 'Open Sans';
-        font-weight: bolder;
-        margin-left: 20%;
-        margin-right: 20%;
-    }
-    h3{
-        text-align: center;
-        font-family: 'Open Sans';
-        font-weight: 400;
-        margin-left: 20%;
-        margin-right: 20%;
-    }
-    p{
-        text-align: left;
-        font-family: 'Open Sans';
-        font-weight: 400;
-        font-size: 15px;
-        margin-left: 30%;
-        margin-right: 30%;
-    }
-    img{
-        height: auto;
-        width: 65vw;
-        margin: auto;
-        display: block;
-    }
-    sup {
-        line-height: 0;
+}
+@media only screen and (min-width: 768px){
+body{
+    margin: 0;
+    background: #FAF7F6;
+    font-family: 'Montserrat';
+}
+h1{
+    text-align: center;
+    font-weight: 600;
+    margin-left: 20%;
+    margin-right: 20%;
+}
+h3{
+    text-align: center;
+    font-weight: 400;
+    margin-left: 20%;
+    margin-right: 20%;
+}
+p{
+    text-align: left;
+    font-weight: 300;
+    margin-left: 30%;
+    margin-right: 30%;
+}
+img{
+    height: auto;
+    width: 65vw;
+    margin: auto;
+    display: block;
+}
+sup {
+    line-height: 0;
+
+    /* The following rules (or similar) likely come from browser 
+        * style and are not needed
+        * font-size: 0.83em;
+        * vertical-align: super;
+        */
     
-        /* The following rules (or similar) likely come from browser 
-         * style and are not needed
-         * font-size: 0.83em;
-         * vertical-align: super;
-         */
-        
-    }
+}
+figcaption {
+    padding: 10px;
+    text-align: center;
+    font-weight: 300;
+    margin-left: 30%;
+    margin-right: 30%;
+}
+figure {
+    margin:0;
+    padding:0;
+}
+hr{
+    margin-left: 30%;
+    margin-right: 30%;
+}
+    
 }

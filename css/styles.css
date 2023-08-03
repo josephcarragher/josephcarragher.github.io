@@ -1,21 +1,26 @@
 @font-face {
-    font-family: "Open Sans";
-    font-weight: 400;
-    src: url("https://fonts.gstatic.com/s/opensans/v13/cJZKeOuBrn4kERxqtaUH3T8E0i7KZn-EPnyo3HZu7kw.woff");
-  }
-@font-face {
-    font-family: "Roboto Mono", monospace;
-    font-weight: 400;
-    src: url("../font/RobotoMono-VariableFont_wght.ttf")
-  }
+  font-family: "Montserrat";
+  src: url("../fonts/Montserrat-VariableFont_wght.woff2")
+}
 body{
     margin: 0;
     background: #FAF7F6;
     text-align: left;
-    font-family: 'Open Sans';
-    font-weight: 400;
+    font-family: 'Montserrat';
     margin-left: 20%;
     margin-right: 20%;
+}
+h1{
+  font-weight: 600;
+}
+h2{
+  font-weight: 500;
+}
+h3{
+  font-weight: 500;
+}
+p{
+  font-weight: 300;
 }
 a:link {
   color: black; 
