@@ -2,14 +2,20 @@
 font-family: "Montserrat";
 src: url("../fonts/Montserrat-VariableFont_wght.woff2")
 }
-
-@media only screen and (max-width: 768px){
 body{
     margin: 0;
     background: #FAF7F6;
     font-family: 'Montserrat';
-
 }
+figure {
+    margin:0;
+    padding:0;
+}
+sup {
+    line-height: 0;
+}
+
+@media only screen and (max-width: 768px){
 h1{
     text-align: center;
     font-weight: 600;
@@ -34,19 +40,12 @@ img{
     margin: auto;
     display: block;
 }
-sup {
-    line-height: 0;
-}
 figcaption {
     padding: 10px;
     text-align: center;
-    font-weight: 400;
+    font-weight: 300;
     margin-left: 10%;
     margin-right: 10%;
-}
-figure {
-    margin:0;
-    padding:0;
 }
 hr{
     margin-left: 10%;
@@ -55,22 +54,17 @@ hr{
     
 }
 @media only screen and (min-width: 768px){
-body{
-    margin: 0;
-    background: #FAF7F6;
-    font-family: 'Montserrat';
-}
 h1{
     text-align: center;
     font-weight: 600;
-    margin-left: 20%;
-    margin-right: 20%;
+    margin-left: 30%;
+    margin-right: 30%;
 }
 h3{
     text-align: center;
     font-weight: 400;
-    margin-left: 20%;
-    margin-right: 20%;
+    margin-left: 30%;
+    margin-right: 30%;
 }
 p{
     text-align: left;
@@ -84,26 +78,12 @@ img{
     margin: auto;
     display: block;
 }
-sup {
-    line-height: 0;
-
-    /* The following rules (or similar) likely come from browser 
-        * style and are not needed
-        * font-size: 0.83em;
-        * vertical-align: super;
-        */
-    
-}
 figcaption {
     padding: 10px;
     text-align: center;
     font-weight: 300;
     margin-left: 30%;
     margin-right: 30%;
-}
-figure {
-    margin:0;
-    padding:0;
 }
 hr{
     margin-left: 30%;
