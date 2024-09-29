@@ -4,7 +4,7 @@
         <meta charset="UTF=8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-        <title>Autonomous Sun Detection and Pointing</title>
+        <title>THRASHER: Autonomous Sun Detection and Pointing</title>
         <link rel="stylesheet" href="../css/blog.css">
         <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=default'></script>
     </head>
@@ -17,7 +17,7 @@
         <p>To achieve full attitude knowledge, two vectors to known bodies are needed. Classically, this was used for TRIAD attitude determination<sup><a id="cite-0" href="#footnote-0">[0]</a></sup>. The sounding rockets launched by GTXR are suborbital, so the two most notable bodies in view of a simple camera system would be the sun and Earth.</p>
 
         <h3>Sun Detection Criteria</h3>
-        <p>The sun is a pretty prominent feature in any image its in--notably due to its brightness. These COTS cameras will automatically change their gain/exposure to avoid overexposure and underexposure. Thus, when the sun is in frame, the area it takes up has the highest brightness level in the image.</p>
+        <p>The sun is a pretty prominent feature in any image it's in--notably due to its brightness. These COTS cameras will automatically change their gain/exposure to avoid overexposure and underexposure. Thus, when the sun is in frame, the area it takes up has the highest brightness level in the image.</p>
         <h4>Brightness Masking</h4>
         <p>This is the first feature we utilize to isolate the sun: masking areas above a brightness threshold. The first step of this is turning the image from BGR (the default of OpenCV instead of RGB) to greyscale. Then, the image is thresholded using <code>cv.THRESH_TOZERO</code> (this preserves pixel values within the mask rather than resulting in a simple binary). In testing, thresholding at or above 250 seems to give good results. This step results in a mask of the original image only containing the brightest object(s) in scene.</p>
         <br>
@@ -39,63 +39,65 @@
             <figcaption>Left: Greyscale image. Right: Mask of Earth.</figcaption>
         </figure>
         <br>
-        <p>Thus, more checks are needed to ensure we avoid false positives. We want to err on the side of strict with these, as false negatives are acceptable--the Kalman filter onboard does not, by nature, constantly need measurements to estimate attitude. However, false positives will make our measurements far less reliable and therefore somehwat useless. There are two other notable features of the sun we can exploit here: (1) its size; and (2) it's shape.</p>
+        <p>Thus, more checks are needed to ensure we avoid false positives. We want to err on the side of strict with these, as false negatives are acceptable--the Kalman filter onboard does not, by nature, constantly need measurements to estimate attitude. However, false positives will make our measurements far less reliable and therefore somehwat useless. There are two other notable features of the sun we can exploit here: (1) its size; and (2) its shape.</p>
         <h4>Area Thresholding</h4>
         <p>The more simple and boring of these is the size. Simply put, we can take the 00th moment to get the area of the mask and then check if that's above a certain threshold. If it is not, it's simply other phenomena caught in the mask due to the auto gain. This step filters out the lens flare caught in the mask in the above image--the area of the mask comes out to 508658.0 and the threshold (through testing set at 1500000) filters this out.</p>
         <h4>Shape Characterization via Moment Invariants</h4>
         <p>The much more interesting check is the shape. How do you quantify a shape? Not its size or location or orientation, but the shape in and of itself. The sun is a single roughly circular object so we only want to look for individual roughly circular objects. Our solution to this are moment invariants--polynomials built upon central moments that are invariant to operations like rotation, scaling, and translation. While Hu's<sup><a id="cite-1" href="#footnote-1">[1]</a></sup> original seven moment invariants are flawed<sup><a id="cite-2" href="#footnote-2">[2]</a></sup>, they work well enough for our case.</p>
-        <table>
-            <caption>Hu's moment invariants for the above image masks</caption>
-            <tr>
-              <th>Moment</th>
-              <th>Sun Mask</th>
-              <th>Lens Flare Mask</th>
-              <th>Earth Mask</th>
-            </tr>
-            <tr>
-              <td>1</td>
-              <td>6.51212292e-04</td>
-              <td>6.45181317e-04</td>
-              <td>1.04446426e-03</td>
-            </tr>
-            <tr>
-              <td>2</td>
-              <td>2.84763384e-08</td>
-              <td>1.68088555e-08</td>
-              <td>5.31536134e-07</td>
-            </tr>
-            <tr>
-                <td>3</td>
-                <td>2.09310572e-12</td>
-                <td>2.93606362e-13</td>
-                <td>4.74385304e-10</td>
-              </tr>
-              <tr>
-                <td>4</td>
-                <td>1.96272938e-14</td>
-                <td>7.54833466e-15</td>
-                <td>1.24995485e-10</td>
-              </tr>
-              <tr>
-                <td>5</td>
-                <td>-3.90364689e-27</td>
-                <td>3.53360327e-28</td>
-                <td>3.01151875e-20</td>
-              </tr>
-              <tr>
-                <td>6</td>
-                <td>-3.30168379e-18</td>
-                <td>9.64839788e-19</td>
-                <td>8.66488641e-14</td>
-              </tr>
-              <tr>
-                <td>7</td>
-                <td>7.66542491e-28</td>
-                <td>-3.75755577e-29</td>
-                <td>4.41688503e-21</td>
-              </tr>
-        </table>
-        <p>Note that for perfect circles, Hu's moment invariants go to zero. Thus, we are looking for moment invariants most near zero that have a maximum difference between the sun and Earth masks. This occurs at invariants seven and five, where the sun mask has 7 order of magnitude lower result than the Earth mask. Note that invariant seven is one of Hu's invariants that was improperly derived--it is not rotationally invariant, but rather experiences a sign change under rotation. Due to this behavior, I've shied away from using it in this algorithm and instead rely on the fifth moment invariant. Thus, we have a metric we can use to determine if the shape bright enough and large enough is circular enough. In testing, objects that are not the sun have not dipped below 1e-21 in magnitude, thus it is used as the upper threshold for finally detecting the sun.</p>
+        <div style="overflow-x:auto;">
+            <table>
+                <caption>Hu's moment invariants for the above image masks</caption>
+                <tr>
+                  <th>Moment</th>
+                  <th>Sun Mask</th>
+                  <th>Lens Flare Mask</th>
+                  <th>Earth Mask</th>
+                </tr>
+                <tr>
+                  <td>1</td>
+                  <td>6.51212292e-04</td>
+                  <td>6.45181317e-04</td>
+                  <td>1.04446426e-03</td>
+                </tr>
+                <tr>
+                  <td>2</td>
+                  <td>2.84763384e-08</td>
+                  <td>1.68088555e-08</td>
+                  <td>5.31536134e-07</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>2.09310572e-12</td>
+                    <td>2.93606362e-13</td>
+                    <td>4.74385304e-10</td>
+                  </tr>
+                  <tr>
+                    <td>4</td>
+                    <td>1.96272938e-14</td>
+                    <td>7.54833466e-15</td>
+                    <td>1.24995485e-10</td>
+                  </tr>
+                  <tr>
+                    <td>5</td>
+                    <td>-3.90364689e-27</td>
+                    <td>3.53360327e-28</td>
+                    <td>3.01151875e-20</td>
+                  </tr>
+                  <tr>
+                    <td>6</td>
+                    <td>-3.30168379e-18</td>
+                    <td>9.64839788e-19</td>
+                    <td>8.66488641e-14</td>
+                  </tr>
+                  <tr>
+                    <td>7</td>
+                    <td>7.66542491e-28</td>
+                    <td>-3.75755577e-29</td>
+                    <td>4.41688503e-21</td>
+                  </tr>
+            </table>
+        </div>
+        <p>Note that for perfect circles, Hu's moment invariants go to zero. Thus, we are looking for moment invariants most near zero that have a maximum difference between the sun and Earth masks. This occurs at invariants seven and five, where the sun mask has a 7 order of magnitude lower result than the Earth mask. Note that invariant seven is one of Hu's invariants that was improperly derived--it is not rotationally invariant, but rather experiences a sign change under rotation. Due to this behavior, I've shied away from using it in this algorithm and instead rely on the fifth moment invariant. Thus, we have a metric we can use to determine if the shape bright enough and large enough is circular enough. In testing, objects that are not the sun have not dipped below 1e-21 in magnitude, thus it is used as the upper threshold for finally detecting the sun.</p>
 
         <h3>SWIL Testing</h3>
         <p>Using frames from videos uploaded by <a href="https://x.com/kipdaugirdas" aria-label="Kip's Twitter page">Kip Daugirdas</a> (감사합니다 Kieran), I assembled a set of 27 test images: 16 that do not contain the sun but contain tricky, potential false positives and 11 that contain the sun but with features that could throw off the algorithm.</p>
@@ -107,32 +109,34 @@
             <img src="../assets/blog/images/sunexamples.webp" alt="On the left, the rocket is still within the atmosphere and the sun is at the top right of the image. In the middle, the rocket has exited the atmosphere and the sun is at the top middle of the image. On the right, only the sun is in frame and significant lens flare is present.">
             <figcaption>Examples of positive images.</figcaption>
         </figure>
-        <table>
-            <caption>Test Results</caption>
-            <tr>
-              <th>False</th>
-              <th>True</th>
-            </tr>
-            <tr>
-              <td>0</td>
-              <td>10</td>
-              <td>Positive</td>
-            </tr>
-            <tr>
-              <td>1</td>
-              <td>16</td>
-              <td>Negative</td>
-            </tr>
-        </table>
+        <div style="overflow-x:auto;">
+            <table>
+                <caption>Test Results</caption>
+                <tr>
+                  <th>False</th>
+                  <th>True</th>
+                </tr>
+                <tr>
+                  <td>0</td>
+                  <td>10</td>
+                  <td>Positive</td>
+                </tr>
+                <tr>
+                  <td>1</td>
+                  <td>16</td>
+                  <td>Negative</td>
+                </tr>
+            </table>
+        </div>
         <p>I'm pretty happy with these results. A lot of these were pretty challenging images with the sun partially in frame, lens flare present, overexposed objects other than the sun, etc. The single false negative is a byproduct of the moment invariant filtering--a lens flare across the image was the same brightness as the sun resulting in a large moment and was labeled as not having the sun present. Other lens flare samples did not experience this and thus it seems like an edge case, potentially one that can be mitigated by hardware like filters or killflashes.</p>
         <figure>
             <img src="../assets/blog/images/falsenegative.webp" alt="On the left is a greyscale image of the sun and a bright lens flare on the other side of the image. On the right, the mask has grabbed both the sun and the lens flare.">
             <figcaption>Left: False negative greyscale image. Right: False negative mask.</figcaption>
         </figure>
-        <p>Given these results, it appears that the steps outlined above are a fairly robust method of sun detection.</p>
+        <p>Given these results, it appears that the steps outlined above are a fairly robust method of sun detection and isolation.</p>
 
         <h3>Pointing a Vector to the Sun</h3>
-        <p>While pointing a vector to the sun yields a much more precise pointing knowledge than simple detecting its presence, it's a very simple addition to this algorithm due to the method of masking we've used.</p>
+        <p>While pointing a vector to the sun yields a much more precise attitude knowledge than simply detecting its presence, it's a very simple addition to this algorithm due to the method of masking we've used.</p>
         <p>Since positive results are masks isolating the sun that retain the values present in the original image, the sun's location can be isolated by centroiding this mask. In OpenCV, this can be done for the x-axis by dividing the 10th moment by the 00th moment and the y-axis by dividing the 01th moment by the 00th moment.</p>
         <center><code>cx = moments['m10'] / moments['m00']</code></center>
         <center><code>cy = moments['m01'] / moments['m00']</code></center>
@@ -140,7 +144,7 @@
         <p>OpenCV has a variant of the Hough line detection algorithm meant to detect circles in an image: <code>cv2.HoughCircles</code>. By constraining the minimum distance to be large (avoids multiple circle outputs) and setting appropriate values for the min and max radius for the circle, this function can be used to output the location of the sun by attempting to fit a circle to the partial circle present in the mask at the edge of the image. There are cases where the center output by <code>cv2.HoughCircles</code> is visually incorrect, so in this mode its result is actually averaged with the mask's computed centroid.</p>
         <figure>
             <img src="../assets/blog/images/suncentroid.webp" alt="On the left is a greyscale image of Earth's horizon and above it the sun. On the right, the same image has a purple circle centered in the sun.">
-            <figcaption>Left: Original greyscale image. Right: Sun location reprojected onto image.</figcaption>
+            <figcaption>Left: Original greyscale image. Right: Detected sun location reprojected onto image.</figcaption>
         </figure>
         <p>Now that the pixel coordinates of the sun have been found, pointing a vector to the sun is straightforward. So long as the incoming frames are undistorted (this can be done by <code>cv2.remap</code> with a precomputed set of transformation maps), a pinhole camera model can be used to directly transform from pixel coordinates to real world vectors<sup><a id="cite-3" href="#footnote-3">[3]</a></sup>.</p>
         <figure>
@@ -148,11 +152,11 @@
             <figcaption>Pinhole camera model.</figcaption>
         </figure>
         <p>This model is based upon the camera obscura--a camera wherein no lenses are used, but instead light travels through a small hole and appears on the other side mirrored but otherwise undistorted. I will not delve into the derivation of the pictured model, but at a high level it involves breaking apart your imager components and assuming the captured images have experienced no distortion (hence the need for <code>cv2.remap</code>).</p>
-        <p>From this model, we can derive a coordinate transformation from the the image sensor at the focal plane and the real light passing through the image plane. This is expressed with the camera calibration matrix, <i><b>K</b></i>,</p>
+        <p>From this model, we can derive a coordinate transformation from the the image sensor at the focal plane to the real light passing through the image plane. This is expressed with the camera calibration matrix, <i><b>K</b></i>,</p>
         <p>$$ {K = \begin{bmatrix}d_x & s & u_p\\\ 0 & d_y & v_p\\\ 0 & 0 & 1\end{bmatrix}} $$</p>
-        <p>The inverse of this matrix can be taken to transform from pixel coordinations to coordinates on the image plane as,</p>
+        <p>Above, \(d_x\) is the inverse of the instantaneous FOV in the x direction, \(d_y\) is the same in the y direction, \(u_p\) is the center of the image in x pixels, \(v_p\) is the same in y pixels, and \(s\) is the skew coefficient for the sensor (this can be assumed as 0 for a well built sensor). The inverse of this matrix can be taken to transform from pixel coordinations to coordinates on the image plane as,</p>
         <p>$$ \begin{bmatrix}x\\\ y\\\ 1\end{bmatrix} = {\begin{bmatrix}\frac{1}{d_x} & \frac{-s}{d_xd_y} & \frac{sv_p - d_yu_p}{d_xd_y}\\\ 0 & \frac{1}{d_y} & \frac{-v_p}{d_y}\\\ 0 & 0 & 1\end{bmatrix} \begin{bmatrix}u\\\ v\\\ 1\end{bmatrix}} $$</p>
-        <p>These coordinates are the vector pointing from the object at the point in the image to the object in the real world in front of the camera. This completes the logic of THRASHER (THResholding And Sun Horizon EstimatoR) and the vector is given to the main flight computer to add to its Kalman filter.</p>
+        <p>These coordinates comprise the vector pointing from the object at the point in the image to the object in the real world in front of the camera. This completes the logic of THRASHER (THResholding And Sun Horizon EstimatoR) and the vector is given to the main flight computer to use in its Kalman filter.</p>
 
         <br>
         <h3><a href="../index.html">Home</a></h3>
