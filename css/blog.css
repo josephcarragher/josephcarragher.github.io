@@ -72,6 +72,12 @@ img{
     margin: auto;
     display: block;
 }
+video{
+    height: auto;
+    width: 100vw;
+    margin: auto;
+    display: block;
+}
 figcaption {
     padding: 10px;
     text-align: center;
@@ -117,6 +123,12 @@ p{
     margin-right: 30%;
 }
 img{
+    height: auto;
+    width: 65vw;
+    margin: auto;
+    display: block;
+}
+video{
     height: auto;
     width: 65vw;
     margin: auto;

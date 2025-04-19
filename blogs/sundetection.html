@@ -6,7 +6,7 @@
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         <title>THRASHER: Autonomous Sun Detection and Pointing</title>
         <link rel="stylesheet" href="../css/blog.css">
-        <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=default'></script>
+        <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     </head>
     <body>
         <h1>THRASHER: Autonomous Sun Detection and Pointing</h1>
@@ -152,7 +152,7 @@
             <figcaption>Pinhole camera model.</figcaption>
         </figure>
         <p>This model is based upon the camera obscura--a camera wherein no lenses are used, but instead light travels through a small hole and appears on the other side mirrored but otherwise undistorted. I will not delve into the derivation of the pictured model, but at a high level it involves breaking apart your imager components and assuming the captured images have experienced no distortion (hence the need for <code>cv2.remap</code>).</p>
-        <p>From this model, we can derive a coordinate transformation from the the image sensor at the focal plane to the real light passing through the image plane. This is expressed with the camera calibration matrix, <i><b>K</b></i>,</p>
+        <p>From this model, we can derive a coordinate transformation from the the image sensor at the focal plane to the real light passing through the image plane. This is expressed with the camera calibration matrix, \(K\),</p>
         <p>$$ {K = \begin{bmatrix}d_x & s & u_p\\\ 0 & d_y & v_p\\\ 0 & 0 & 1\end{bmatrix}} $$</p>
         <p>Above, \(d_x\) is the inverse of the instantaneous FOV in the x direction, \(d_y\) is the same in the y direction, \(u_p\) is the center of the image in x pixels, \(v_p\) is the same in y pixels, and \(s\) is the skew coefficient for the sensor (this can be assumed as 0 for a well built sensor). The inverse of this matrix can be taken to transform from pixel coordinations to coordinates on the image plane as,</p>
         <p>$$ \begin{bmatrix}x\\\ y\\\ 1\end{bmatrix} = {\begin{bmatrix}\frac{1}{d_x} & \frac{-s}{d_xd_y} & \frac{sv_p - d_yu_p}{d_xd_y}\\\ 0 & \frac{1}{d_y} & \frac{-v_p}{d_y}\\\ 0 & 0 & 1\end{bmatrix} \begin{bmatrix}u\\\ v\\\ 1\end{bmatrix}} $$</p>

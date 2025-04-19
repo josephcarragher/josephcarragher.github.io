@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF=8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <title>RANGER: Autonomous Horizon Sensing and Pose Estimation</title>
+        <link rel="stylesheet" href="../css/blog.css">
+        <script type="text/javascript" id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    </head>
+    <body>
+        <h1>RANGER: Autonomous Horizon Sensing and Pose Estimation</h1>
+        <h3>19 April 2025</h3>
+
+        <p>This is an overview of one half of the optical navigation system I've developed for <a href="https://www.ramblinrocketclub.org/gtxr" aria-label="Homepage for the rocketry club">Georgia Tech eXperimental Rocketry (GTXR)</a>.</p>
+        <p>Aboard GTXR rockets are either Arducams or NoIR camera modules--simple, commerical-of-the-shelf (COTS) cameras connected to a Raspberry Pi. These provide a very cheap, simple sensor that can be used for absolute attitude determination.</p>
+        <p>To achieve full attitude knowledge, two vectors to known bodies are needed. Classically, this was used for TRIAD attitude determination<sup><a id="cite-0" href="#footnote-0">[0]</a></sup>. The sounding rockets launched by GTXR are suborbital, so the two most notable bodies in view of a simple camera system would be the sun and Earth.</p>
+
+        <h3>A New Horizon Signature</h3>
+        <p>Horizon detection is a common task performed in a wide variety of optical attitude determination sytems. When looking at these systems, even in different environments, something becomes obvious--the enviornment is not changing. That is, a spacecraft performing horizon-based optical navigation will always be dealing with a lit limb of an airless body (or at least it should be), a maritime application will always be dealing with the flat line gradient between sea and sky, and so on and so forth. Thus, the methods used for these applications can be tuned for their specific signature. To my knowledge, this is how most horizon sensing and estimation is done (see Note A below).</p>
+        <p>The issue with this is that on a suborbital rocket, the environment is not a constant. That is, the signature we're looking for (the horizon) is changing. Near ground level, we distinguish the horizion by the relatively sharp, flat gradient between the ground color (tan for the desert) the sky color (usually a form of blue). As altitude increases, the horizon is then distinguished by the haziness between the darker sky above and the bright ground below, where now a slight curve can be seen. Finally, as we get to our highest altitudes, the horizon can be distinguished by the same bright haze between the blackness of space and the bright colors of the Earth where the seen curvature is much more prominent.</p>
+        <br>
+        <figure>
+            <img src="../assets/blog/images/altitudescolor.webp" alt="Four images are present that capture the horizon in increasing altitude from effectively ground level to at the edge of space.">
+            <figcaption>Visible color images of horizon at different altitudes and attitudes.</figcaption>
+        </figure>
+        <br>
+        <p>Thus, the question arises--how can we detect this changing signature in a unified manner? Obviously, we could employ multiple methods that switch at different altitudes, each targeting a specific signature, but that would be clumsy and inelegant. After much analysis and many attempts of isolating the horizon at different altitudes, a solution presented itself: <b>there is often a notable gradient in saturation between the sky and the ground</b>. This is the constant signature that RANGER looks for to estimate the horizon across the entire regime of flight.</p>
+        <br>
+        <figure>
+            <img src="../assets/blog/images/altitudessaturation.webp" alt="The previous images are now black and white, featuring generally dark features on Earth and generally bright features in the sky. The shots with the blackness of space are generally black as well.">
+            <figcaption>Saturation bands of each of the previous images.</figcaption>
+        </figure>
+        <br>
+        <p>As a preface to the logic flow of RANGER, I want to note that this algorithm does not strive to be high precision. In opposition to industry horizon-based spacecraft OPNAV, RANGER is only trying to give a relatively close estimate of the attitude of the rocket relative to a spherical Earth. RANGER would be ill-suited for premier NASA missions. It is meant to work robustly under unideal conditions with consumer hardware--often the case for collegiate high powered rocketry.</p>
+        
+        <h3>Horizon Detection Logic Flow</h3>
+        <p>Firstly, the horizon in the saturation scene is very prominent. There is also a myriad of smaller detail we don't care about. Thus, the first thing we do is apply a low-pass filter to the saturation image to rid it of these unwanted details.</p>
+        <p>After the filter is applied, we then take the gradients in the scene.</p>
+        <br>
+        <figure>
+            <img src="../assets/blog/images/gradients.webp" alt="The gradients show bright curves along the horizon of the previous saturation band images. Also present is much information on the Earth, and some in the sky/space.">
+            <figcaption>Gradients of low-frequency scene content.</figcaption>
+        </figure>
+        <br>
+        <p>There is still much unwanted information in these gradients. Luckily, we still have much more information from our sensor to utilize! We know the horizon cannot lie in the blackness of space and we know the signature we're looking for is a byproduct of a generally highly saturated atmosphere. Thus, we can mask our image from thresholds of these values to further rid the image of information we don't care about. Further, we know the horizon has strong gradients relative to others in the image. So, we can take a threshold of this gradient mask above a certain value (experimentally found to be 45% of the maximum brightness value in the image) to further rid the image of unwanted information.</p>
+        <br>
+        <figure>
+            <img src="../assets/blog/images/gradientmasks.webp" alt="The previous gradients are much more sparse now. The strong horizon lines are still present, but any information in the sky is now gone, and much of the data on the ground is gone--what's left is small and distributed.">
+            <figcaption>Pruned gradient information.</figcaption>
+        </figure>
+        <br>
+        <p>From the above image, we can see the horizon line clear as day (ha).</p>
+        <p>From here, a light low-pass filter is applied to ensure all of the masked gradients are self-connected before applying <code>cv2.bwconncomp</code> to segment the individual blobs in the image. RANGER sorts through these blobs to look for the largest that is within an area window (i.e., larger than random information but smaller than an overexposed bright spot) and greater than a diagonal length threshold (i.e., line-like in shape, as opposed to a 'denser' object like a circle). If a blob in the scene passes these, then RANGER concludes a horizon has been found and proceeds to estimating the rocket's pose from this.</p>
+        <br>
+        <figure>
+            <img src="../assets/blog/images/horizonsfound.webp" alt="Only the horizon lines remain against black backgrounds.">
+            <figcaption>Horizon blobs found in frame.</figcaption>
+        </figure>
+        <br>
+
+        <h3>Estimating Pose from a Blob</h3>
+        <p>The horizon blobs found from the main image processing section of the code are incredibly useful, but imprecise. How do you quantify the orientation of such an odd object to recover attitude from it? Rather than doing it directly with this blob, we choose to approximate the blob with a line. A large simplification, but generally accurate enough in testing.</p>
+        <br>
+        <figure>
+            <img src="../assets/blog/images/horizonsdrawn.webp" alt="Estimated horizon lines are drawn onto the original color images. Some slight slanting and offset due to the bright atmosphere haze is present, but overall the lines are accurate, if a bit imprecise.">
+            <figcaption>Estimated horizon lines in frame.</figcaption>
+        </figure>
+        <br>
+        <p>From this line, we can very simply quantify its orientation and position in the camera frame. Of note, we choose to compute the angle between it and horizontal in the frame (and ensuring the Earth is 'down'--see Note B below) as well as the distance between the center of the frame and a point normal to the line from the center point.</p>
+        <br>
+        <figure>
+            <img src="../assets/blog/images/horizongeometry.webp" alt="A dark line is lifted above the center of the image by dy and rotated around the center by lambda.">
+            <figcaption>Horizon line geometry.</figcaption>
+        </figure>
+        <br>
+        <p>The yaw of the rocket with respect to the horizon can be computed directly from \(\lambda\) in the above scene, but the pitch indicated from the \(\delta y\) term is more elusive. Very simply, the difference in pixel values multiplied by the instantaneous field of view (IFOV) of the camera will yield the real world angle between center of the frame and the line in the figure--but remember, the whole point of this is that we're trying to make a method of doing this for a rocket that's <i>changing altitudes</i>. The horizon, in zenith pointed flight, will begin to sink under the center of the frame as the rocket gains altitude.</p>
+        <p>RANGER accounts for this by pulling altitude estimates from the flight computer and comparing them against a look up table of pixel offsets. This offset is simply subtracted from the pixel length \(\delta y\) and we are left with the pixel offset due to pitching. This value is what is finally muiltiplied by the IFOV to yield the angular pitch of the rocket in the real world.</p>
+        <p>With these two angles, two direction cosine matrices (DCMs) can be made to rotate a nominal nadir vector (+\(y\) in the camera frame) to the actual nadir vector at the time the image was taken.</p>
+        <p>$$ \begin{bmatrix}x\\\ y\\\ z\end{bmatrix} =  R_{x}(IFOV\delta y)R_{z}(\lambda)\begin{bmatrix}0\\\ 1\\\ 0\end{bmatrix} $$</p>
+        <br>
+        <figure>
+            <video controls src="../assets/blog/videos/video.webm" type="video/webm" alt="The video shows the view from a rocket going from the ground into the mesosphere. Across the video, RANGER generally accurately captures the horizon, even in cases where little is present. A handful of false positives and false negatives are present. TRASHER is also present, very accurately picking up the sun in frames where it's present."></video>
+            <figcaption>Timelapse of suborbital flight with RANGER and <a href="./sundetection.html" aria-label="Blog post for sun detection algorithm">THRASHER</a> used on video from <a href="https://x.com/kipdaugirdas" aria-label="Kip's Twitter page">Kip Daugirdas</a> (감사합니다 again Kieran).</figcaption>
+        </figure>
+        <br>
+        <p>This completes the logic of RANGER (satuRAtioN Gradient horizon EstimatoR) and the vector is given to the main flight computer to use its in Kalman filter.</p>
+        <br>
+
+        <h3>Note A: Alternative Methods of Horizon Estimation</h3>
+        <p>While this is generally true, while writing this post I actually stumbled upon a method<sup><a id="cite-1" href="#footnote-1">[1]</a></sup> that is seemingly agnostic to the signature of interest. It basically works by selecting a line position and orientation which segments the image into two portions. The line is manuevered to maximize the mahalanobis distance between the colorspaces of both segments. That is, it looks for a line that makes the colors on each side of the line as different as possible.</p>
+        <p>I haven't implemented this myself, but in theory it would be pretty adaptable in the way that RANGER is meant to be. I plan to try this out just to see how it performs--it's a very clever and interesting method of doing this.</p>
+        <br>
+        <h3>Note B: Ensuring the Earth is Down</h3>
+        <p>This was initially a very problematic thing to check for--and not something I even thought about. Of course we know where the Earth is! In fact, the flight computer does not inherently know where the Earth is. Thus, it must be calculated.</p>
+        <p>The final method I settled on for this was a hybrid approach--if the sun is detected by THRASHER for a given frame, RANGER automatically places the Earth on the other side of the horizon. If THRASHER does not see the sun in the frame, then RANGER centroids the red channel of the original color image. The red channel of any given frame should mostly be dominated by the Earth--the atmosphere isn't that red, nor is space. Thus, the centroid of this channel should exist on the side of the horizon that holds the Earth.</p>
+        <p>This method is not without issues--of note, when going through a regime of particular haziness in zenith pointed flight, the centroid approaches the center of the frame. Thus, if the horizon is near the center, it can end up placing the Earth on the wrong side of the horizon. This seems to be an edge case, so presently this implementation is acceptable.</p>
+
+        <br>
+        <h3><a href="../index.html">Home</a></h3>
+        <hr>
+
+        <p id="footnote-0">[0] <a href="https://apps.dtic.mil/sti/trecms/pdf/AD0624479.pdf">A Passive System for Determining the Attitude of a Satellite</a> <a href="#cite-0" aria-label="Return to citation zero spot.">^</a></p>
+        <p id="footnote-1">[1] <a href="https://ntrs.nasa.gov/api/citations/20020023527/downloads/20020023527.pdf">Vision-Guided Flight Stability and Autonomy for Micro Air Vehicles</a> <a href="#cite-1" aria-label="Return to citation zero spot.">^</a></p>
+    </body>
+</html>
