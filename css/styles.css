@@ -11,6 +11,12 @@
     margin-left: 10%;
     margin-right: 10%;
 }
+img{
+  height: auto;
+  width: 70vw;
+  margin: auto;
+  display: block;
+}
 }
 
 @media only screen and (min-width: 768px){
@@ -21,6 +27,12 @@
     font-family: 'Montserrat';
     margin-left: 30%;
     margin-right: 30%;
+}
+img{
+  height: auto;
+  width: 30vw;
+  margin: auto;
+  display: block;
 }
 }
 nav{
